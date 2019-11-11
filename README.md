@@ -38,26 +38,6 @@ Enable weaker play aiming for an Elo rating as set by UCI_Elo. This option overr
 * #### UCI_Elo
 If enabled by UCI_LimitStrength, aim for an engine strength of the given Elo. This Elo rating has been calibrated at a time control of 60s+0.6s and anchored to CCRL 40/4.
 
-## ICCF Analyzes
-Default: 0, Min: 0, Max:8
-
-0, no MultiPV.
-
-For analysis (purpose)
-* Value 1 corresponds to multiPV = 2
-* Value 2 to multiPV = 4
-* Value 3 to multiPV = 8
-* Value 4 to multiPV =16
-* Value 5 to multiPV = 32
-* Value 6 to multiPV = 64
-* Value 7 to multiPV = 128
-* Value 8 to multiPV = 256
-
-1-8 MultiPV: higher depths and longer time to reach them. So, fewer tactical shots missed, but loss of some ELO, increasingly until 8,
-corresponding to multiPV = 256.
-
-
-Recommended values: from 2 to 5 ( > 5 too wide search width)
 
 ## S_XPrO-NN can use two parallel books
 original code by Thomas Zipproth:
