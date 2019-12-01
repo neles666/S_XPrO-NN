@@ -1108,13 +1108,6 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
-      //full threads patch begin
-      if(thisThread->fullSearch)
-      {
-		  newDepth = depth - 1;
-          goto skipExtensionAndPruning;
-      }
-      //full threads patch end
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1227,6 +1220,7 @@ moves_loop: // When in check, search starts from here
 
       // Add extension to new depth
       newDepth += extension;
+
 
 
       // Speculative prefetch as early as possible
