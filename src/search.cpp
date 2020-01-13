@@ -903,7 +903,8 @@ namespace {
 			  }
 		    }
 		    //thisThread->tbHits.fetch_add(1, std::memory_order_relaxed);
-		    return expTTValue;
+			if (pos.rule50_count() < 90)
+		        return expTTValue;
 	      }
 	    }
 	}
