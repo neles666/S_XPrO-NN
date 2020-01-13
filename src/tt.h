@@ -121,12 +121,14 @@ struct LearningFileEntry
 	Depth depth = 0;
 	Value score = VALUE_NONE;
 	Move move = MOVE_NONE;
+	int performance = 0;
 };
 struct MoveInfo
 {
 	Move move = MOVE_NONE;
 	Depth depth = 0;
 	Value score = VALUE_NONE;
+	int performance = 0;
 };
 
 

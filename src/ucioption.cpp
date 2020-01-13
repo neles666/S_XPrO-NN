@@ -36,25 +36,65 @@ using std::string;
 
 UCI::OptionsMap Options; // Global object
 
+Value PawnValueMg, PawnValueEg;
+Value KnightValueMg, KnightValueEg;
+Value BishopValueMg, BishopValueEg;
+Value RookValueMg, RookValueEg;
+Value QueenValueMg, QueenValueEg;
+Value MidgameLimit, EndgameLimit;
+
 namespace UCI {
+
+void on_eval(const Option&) {
+  PawnValueMg   = Value(int(Options["PawnValueMg"]));
+  PawnValueEg   = Value(int(Options["PawnValueEg"]));
+  KnightValueMg = Value(int(Options["KnightValueMg"]));
+  KnightValueEg = Value(int(Options["KnightValueEg"]));
+  BishopValueMg = Value(int(Options["BishopValueMg"]));
+  BishopValueEg = Value(int(Options["BishopValueEg"]));
+  RookValueMg   = Value(int(Options["RookValueMg"]));
+  RookValueEg   = Value(int(Options["RookValueEg"]));
+  QueenValueMg  = Value(int(Options["QueenValueMg"]));
+  QueenValueEg  = Value(int(Options["QueenValueEg"]));
+  MidgameLimit  = Value(int(Options["MidgameLimit"]));
+  EndgameLimit  = Value(int(Options["EndgameLimit"]));
+
+  PieceValue[MG][PAWN] = PawnValueMg;
+  PieceValue[EG][PAWN] = PawnValueEg;
+  PieceValue[MG][KNIGHT] = KnightValueMg;
+  PieceValue[EG][KNIGHT] = KnightValueEg;
+  PieceValue[MG][BISHOP] = BishopValueMg;
+  PieceValue[EG][BISHOP] = BishopValueEg;
+  PieceValue[MG][ROOK] = RookValueMg;
+  PieceValue[EG][ROOK] = RookValueEg;
+  PieceValue[MG][QUEEN] = QueenValueMg;
+  PieceValue[EG][QUEEN] = QueenValueEg;
+}
 
 /// 'On change' actions, triggered by an option's value change
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) { TT.resize(o); }
-void on_large_pages(const Option& o) { TT.resize(o); }  // warning is ok, will be removed
+void on_large_pages(const Option& o) { TT.resize(o); }
 void on_logger(const Option& o) { start_logger(o); }
 void on_threads(const Option& o) { Threads.set(o); }
 void on_tb_path(const Option& o) { Tablebases::init(o); }
+//livebook begin
+void on_livebook_url(const Option& o) { Search::setLiveBookURL(o); }
+void on_livebook_timeout(const Option& o) { Search::setLiveBookTimeout(o); }
+//livebook end
 void on_HashFile(const Option& o) { TT.set_hash_file_name(o); }
 void SaveHashtoFile(const Option&) { TT.save(); }
 void LoadHashfromFile(const Option&) { TT.load(); }
 void LoadEpdToHash(const Option&) { TT.load_epd_to_hash(); }
 void on_book_file1(const Option& o) { polybook1.init(o); }
 void on_book_file2(const Option& o) { polybook2.init(o); }
+void on_book_file3(const Option& o) { polybook3.init(o); }
 void on_best_book_move1(const Option& o) { polybook1.set_best_book_move(o); }
 void on_best_book_move2(const Option& o) { polybook2.set_best_book_move(o); }
+void on_best_book_move3(const Option& o) { polybook3.set_best_book_move(o); }
 void on_book_depth1(const Option& o) { polybook1.set_book_depth(o); }
 void on_book_depth2(const Option& o) { polybook2.set_book_depth(o); }
+void on_book_depth3(const Option& o) { polybook3.set_book_depth(o); }
 
 
 /// Our case insensitive less() function as required by UCI protocol
@@ -80,12 +120,18 @@ void init(OptionsMap& o) {
   o["BestBook2Move"]         << Option(false, on_best_book_move2);
   o["BookFile2"]             << Option("book2.bin", on_book_file2);
   o["BookDepth2"]            << Option(300, 1, 350, on_book_depth2);
+  o["Use Book3"]             << Option(false);
+  o["BestBook3Move"]         << Option(false, on_best_book_move2);
+  o["BookFile3"]             << Option("book3.bin", on_book_file2);
+  o["BookDepth3"]            << Option(300, 1, 350, on_book_depth2);
   o["Debug Log File"]        << Option("", on_logger);
-  o["Contempt"]              << Option(24, -100, 100);
-  o["Analysis Contempt"]     << Option("Both var Off var White var Black var Both", "Both");
+  o["Contempt"]              << Option(0, -100, 100);
+  o["Dynamic Contempt"]      << Option(false);
+  o["Analysis Contempt"]     << Option("Off var Off var White var Black var Both", "Off");
+  o["Show Fail High and Fail Low"] << Option(true);
   o["Threads"]               << Option(1, 1, 512, on_threads);
   o["Hash"]                  << Option(16, 1, MaxHashMB, on_hash_size);
-  o["Large Pages"]           << Option(true, on_large_pages);
+  o["Large Pages"]           << Option(false, on_large_pages);
   o["Clear Hash"]            << Option(on_clear_hash);
   o["Ponder"]                << Option(false);
   o["MultiPV"]               << Option(1, 1, 500);
@@ -108,6 +154,28 @@ void init(OptionsMap& o) {
   o["Syzygy50MoveRule"]      << Option(true);
   o["SyzygyProbeLimit"]      << Option(7, 0, 7);
   o["NN Persisted Self-Learning"]  << Option(false);
+  o["Live Book"]             << Option(false);
+  o["Live Book URL"]         << Option("http://www.chessdb.cn/cdb.php", on_livebook_url);
+  o["Live Book Timeout"]     << Option(1500, 0, 10000, on_livebook_timeout);
+  o["Live Book Diversity"]   << Option(false);
+  o["Live Book Contribute"]  << Option(false);
+  o["Opening variety"]       << Option (0, 0, 40);
+    // SPSA
+  o["PawnValueMg"]           << Option(128, 0, 500, on_eval);
+  o["PawnValueEg"]           << Option(213, 0, 500, on_eval);
+  o["KnightValueMg"]         << Option(781, 0, 2000, on_eval);
+  o["KnightValueEg"]         << Option(854, 0, 2000, on_eval);
+  o["BishopValueMg"]         << Option(825, 0, 2000, on_eval);
+  o["BishopValueEg"]         << Option(915, 0, 2000, on_eval);
+  o["RookValueMg"]           << Option(1276, 0, 3000, on_eval);
+  o["RookValueEg"]           << Option(1380, 0, 3000, on_eval);
+  o["QueenValueMg"]          << Option(2538, 0, 5000, on_eval);
+  o["QueenValueEg"]          << Option(2682, 0, 5000, on_eval);
+  o["MidgameLimit"]          << Option(15258, 8000, 25000, on_eval);
+  o["EndgameLimit"]          << Option(3915, 0, 10000, on_eval);
+
+  on_eval(o["EndgameLimit"]);
+
 }
 
 void initLearning() {

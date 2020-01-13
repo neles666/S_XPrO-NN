@@ -76,7 +76,6 @@ namespace {
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
-	 //kelly begin
 	if (Options["NN Persisted Self-Learning"] && (plies > maximumPly))
 	{
 	  plies++;
@@ -85,11 +84,11 @@ namespace {
 	  currentLearningEntry.hashKey = pos.key();
 	  currentLearningEntry.move = m;
 	  currentLearningEntry.score = VALUE_NONE;
+	  currentLearningEntry.performance = 0;
 	  insertIntoOrUpdateLearningTable(currentLearningEntry,globalLearningHT);
 	  maximumPly = plies;
 	}
-	//kelly end
-	states->emplace_back();
+        states->emplace_back();
         pos.do_move(m, states->back());
     }
   }
@@ -115,13 +114,11 @@ namespace {
     if (Options.count(name))
     {
         Options[name] = value;
-        //from Kelly begin
         if((name=="NN Persisted Self-Learning") && (value=="true"))
         {
             UCI::initLearning();
 
         }
-        //from Kelly end
     }
     else
         sync_cout << "No such option: " << name << sync_endl;
@@ -196,14 +193,11 @@ namespace {
         else if (token == "setoption")  setoption(is);
         else if (token == "position")   position(pos, is, states);
         else if (token == "ucinewgame") {
-									 
-	    //from Kelly
             if(Options["NN Persisted Self-Learning"])
               {
         	maximumPly = 0;
         	setStartPoint();
               }
-	   //end from Kelly
 	    Search::clear(); elapsed = now();// Search::clear() may take some while
         }
     }
@@ -247,7 +241,6 @@ void UCI::loop(int argc, char* argv[]) {
       token.clear(); // Avoid a stale if getline() returns empty or blank line
       is >> skipws >> token;
 
-      //from Kelly begin
       if (token == "quit"
                 ||  token == "stop")
       	{
@@ -257,7 +250,6 @@ void UCI::loop(int argc, char* argv[]) {
 	    }
       	  Threads.stop = true;
       	}
-      //from Kelly end
 
       // The GUI sends 'ponderhit' to tell us the user has played the expected move.
       // So 'ponderhit' will be sent if we were told to ponder on the same move the
@@ -276,13 +268,10 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "position")   position(pos, is, states);
 	  else if (token == "ucinewgame")
 	  {
-					   
-	      //from Kelly
 	      if(Options["NN Persisted Self-Learning"]){
 		  maximumPly = 0;
 		  setStartPoint();
 	      }
-	      //end from Kelly
 	      Search::clear();
 	  }
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
@@ -314,7 +303,7 @@ string UCI::value(Value v) {
   stringstream ss;
 
   if (abs(v) < VALUE_MATE - MAX_PLY)
-      ss << "cp " << v * 100 / PawnValueEg;
+      ss << "cp " << v * scoreScale / PawnValueEg;
   else
       ss << "mate " << (v > 0 ? VALUE_MATE - v + 1 : -VALUE_MATE - v) / 2;
 

@@ -179,14 +179,16 @@ enum Value : int {
   VALUE_MATE_IN_MAX_PLY  =  VALUE_MATE - 2 * MAX_PLY,
   VALUE_MATED_IN_MAX_PLY = -VALUE_MATE + 2 * MAX_PLY,
 
-  PawnValueMg   = 128,   PawnValueEg   = 213,
-  KnightValueMg = 781,   KnightValueEg = 854,
-  BishopValueMg = 825,   BishopValueEg = 915,
-  RookValueMg   = 1276,  RookValueEg   = 1380,
-  QueenValueMg  = 2538,  QueenValueEg  = 2682,
-
-  MidgameLimit  = 15258, EndgameLimit  = 3915
 };
+
+extern Value PawnValueMg, PawnValueEg;
+extern Value KnightValueMg, KnightValueEg;
+extern Value BishopValueMg, BishopValueEg;
+extern Value RookValueMg, RookValueEg;
+extern Value QueenValueMg, QueenValueEg;
+
+extern Value MidgameLimit, EndgameLimit;
+  
 
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
@@ -244,6 +246,8 @@ enum Direction : int {
 enum File : int {
   FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
 };
+
+enum {scoreScale = 20};//to align with the gui: initial position cp=10
 
 enum Rank : int {
   RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
