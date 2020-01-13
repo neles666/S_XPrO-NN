@@ -28,6 +28,58 @@ This distribution of SugaR consists of the following files:
 
 ## Uci options
 
+### Hash Memory
+
+#### Hash
+
+_Integer, Default: 16, Min: 1, Max: 131072 MB (64-bit) : 2048 MB (32-bit)_
+
+
+The amount of memory to use for the hash during search, specified in MB (megabytes). This
+number should be smaller than the amount of physical memory for your system.
+A modern formula to determine it is the following:
+
+_(T x S / 100) MB_
+where
+_T = the average move time (in seconds)
+S = the average node speed of your hardware_
+A traditional formula is the following:
+_(N x F x T) / 512_
+where
+_N = logical threads number
+F = clock single processor frequency (MB)
+T = the average move time (in seconds)_
+
+#### Save/Load Hash File Capability
+Oribinal code by by Daniel José Queraltó
+Interesting discussion here:
+http://www.talkchess.com/forum3/viewtopic.php?f=2&t=64720&hilit=Stockfish+version+with+hash+saving+capability+EPD
+
+The capability of saving the full hash to file, to allow the user to recover a previous analysis session and continue it.
+The saved hash file will be of the same size of the hash memory, so if you defined 4 GB of hash, such will be the file size. Saving and loading such big files can take some time.
+
+UCI options parameters:
+
+-option name NeverClearHash type check default false
+-option name HashFile type string default hash.hsh
+-option name SaveHashtoFile type button
+-option name LoadHashfromFile type button
+-option name LoadEpdToHash type button  (First you set HashFile to an epd file and then press this new button.)
+
+You can set the NeverClearHash option to avoid that the hash could be cleared by a Clear Hash or ucinewgame command.
+The HashFile parameter is the full file name with path information. If you don't set the path, it will be saved in the current folder. It defaults to hash.hsh.
+To save the hash, stop the analysis and press the SaveHashtoFile button in the uci options screen of the GUI.
+To load the hash file, load the game you are interested in, load the engine withouth starting it, and press the LoadHashfromFile button in the uci options screen of the GUI. Now you can start the analysis.
+### Analysis Contempt
+
+This option has no effect in the playing mode.
+A non-zero contempt is determined by Shashin's options and used only during game play, not during infinite analysis where it's turned off.
+This helps make analysis consistent when switching sides and exploring various lines and lets you include a non-zero Contempt in your analysis. 
+Note when playing against the computer, if you wish to use a non-zero Contempt, either turn off 'White Contempt' so that Contempt will apply to the Computer's side, or you can use the above description to set an appropriate Contempt for the specific side that SugaR is playing. 
+Please note if 'White Contempt' is off, in infinite search or analysis mode, SugaR will always use a value of 0 for Contempt.
+If you use this option, you can analyse with contempt settled for white, black or for all points of view.
+Obviously, this option can produce an asymmetry in the evaluations (the evaluation changes when you switch sides). So, be aware!
+
 #### Skill Level
 Lower the Skill Level in order to make Stockfish play weaker (see also UCI_LimitStrength). Internally, MultiPV is enabled, and with a certain probability depending on the Skill Level a weaker move will be played.
 										
@@ -77,6 +129,30 @@ N.B.
 
 Because of disk access, to be effective, the learning must be made at no bullet time controls (less than 5 minutes/game).
 
+### Live Book section (thanks to Andrea Manzo "author di ShashChess" for explanations windows builds)
+
+#### Live Book (checkbox)
+
+_Boolean, Default: False_ If activated, the engine uses the livebook as primary choice.
+
+#### Live Book URL
+The default is the online chessdb [https://www.chessdb.cn/queryc_en/](https://www.chessdb.cn/queryc_en/), a wonderful project by noobpwnftw (thanks to him!)
+ 
+[https://github.com/noobpwnftw/chessdb](https://github.com/noobpwnftw/chessdb)
+[http://talkchess.com/forum3/viewtopic.php?f=2&t=71764&hilit=chessdb](http://talkchess.com/forum3/viewtopic.php?f=2&t=71764&hilit=chessdb)
+
+
+#### Live Book Timeout
+
+_Default 5000, min 0, max 10000_
+
+#### Live Book Diversity
+
+_Boolean, Default: False_ If activated, the engine varies its play, reducing conversely its strength because already the live chessdb is very large.
+
+#### Live Book Contribute
+
+_Boolean, Default: False_ If activated, the engine sends a move, not in live chessdb, in its queue to be analysed. In this manner, we have a kind of learning cloud.
 ### Syzygybases
 
 **Configuration**
