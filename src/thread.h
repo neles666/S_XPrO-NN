@@ -92,6 +92,7 @@ struct MainThread : public Thread {
   int callsCnt;
   bool stopOnPonderhit;
   std::atomic_bool ponder;
+  std::atomic_bool stop, increaseDepth;
 };
 
 
