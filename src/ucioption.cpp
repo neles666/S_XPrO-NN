@@ -92,10 +92,8 @@ void init(OptionsMap& o) {
   o["BookFile3"]             << Option("book3.bin", on_book_file2);
   o["BookDepth3"]            << Option(300, 1, 350, on_book_depth2);
   o["Debug Log File"]        << Option("", on_logger);
-  o["Contempt"]              << Option(0, -100, 100);
-  o["Dynamic Contempt"]      << Option(false);
-  o["Analysis Contempt"]     << Option("Off var Off var White var Black var Both", "Off");
-  o["Show Fail High and Fail Low"] << Option(true);
+  o["Contempt"]              << Option(24, -100, 100);
+  o["Analysis Contempt"]     << Option("Both var Off var White var Black var Both", "Both");
   o["Threads"]               << Option(1, 1, 512, on_threads);
   o["Hash"]                  << Option(16, 1, MaxHashMB, on_hash_size);
   o["Large Pages"]           << Option(false, on_large_pages);
