@@ -85,9 +85,6 @@ namespace {
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
-  int KingShelter = 30;
-  int KingSafety = 6;
-  TUNE(KingShelter, KingSafety);																														
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -134,6 +131,7 @@ namespace {
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
+  constexpr Score KingProtector      = S(  7,  8);
   constexpr Score KnightOnQueen      = S( 16, 12);
   constexpr Score LongDiagonalBishop = S( 45,  0);
   constexpr Score MinorBehindPawn    = S( 18,  3);
@@ -149,12 +147,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 52, 10);
   constexpr Score WeakQueen          = S( 49, 15);
-  Score KingPenalty        = S(  0,  0);
-  Score KingAggressor      = S(  6,  6);
-  Score KingProtector      = S(  7,  8);
-TUNE(SetRange(0,100), KingPenalty);				   
-  TUNE(KingAggressor);
-  TUNE(KingProtector);
+
 #undef S
 
   // Evaluation class computes and stores attacks tables and other working data
@@ -311,7 +304,7 @@ TUNE(SetRange(0,100), KingPenalty);
 
             // Penalty if the piece is far from the king
             score -= KingProtector * distance(s, pos.square<KING>(Us));
-            score -= KingAggressor * distance(s, pos.square<KING>(Them));
+
             if (Pt == BISHOP)
             {
                 // Penalty according to number of pawns on the same color square as the
@@ -387,10 +380,9 @@ TUNE(SetRange(0,100), KingPenalty);
     Bitboard rookChecks, queenChecks, bishopChecks, knightChecks;
     int kingDanger = 0;
     const Square ksq = pos.square<KING>(Us);
-	Score score = make_score(0, 0);
 
     // Init the score with king shelter and enemy pawns storm
-    Score shelterEval = score = pe->king_safety<Us>(pos) * KingShelter / 32;
+    Score score = pe->king_safety<Us>(pos);
 
     // Attacked squares defended at most once by our queen or king
     weak =  attackedBy[Them][ALL_PIECES]
@@ -462,7 +454,6 @@ TUNE(SetRange(0,100), KingPenalty);
                  - 873 * !pos.count<QUEEN>(Them)
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
-				 -  KingSafety * mg_value(shelterEval) / 64
                  -   4 * kingFlankDefense
                  +  37;
 
@@ -470,9 +461,6 @@ TUNE(SetRange(0,100), KingPenalty);
     if (kingDanger > 100)
         score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
 
-    // Penalty if king is not active when enemy king is
-    if(relative_rank(Us, ksq) == RANK_1 && relative_rank(Them, pos.square<KING>(Them)) != RANK_8)
-    	score -= KingPenalty;																								 
     // Penalty when our king is on a pawnless flank
     if (!(pos.pieces(PAWN) & KingFlank[file_of(ksq)]))
         score -= PawnlessFlank;

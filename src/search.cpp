@@ -83,24 +83,6 @@ namespace {
     return Value(217 * (d - improving));
   }
 
-  TUNE(RazorMargin);
-
-    int NMPdepth = 258;
-  Value NMPvalue = Value(192);
-  TUNE(NMPdepth, NMPvalue);
-  
-  int NullSearchDepth = 32;
-  Value NullSearchValue = Value(317);
-  Value NmpImprovingValue = Value(30);
-
-  TUNE(NullSearchDepth, NullSearchValue, NmpImprovingValue);
-  
-  int NullReductionValue = 854;
-  TUNE(NullReductionValue); 
-  
-  int NullReductionDepth = 68;
-  TUNE(NullReductionDepth); 
-  
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
@@ -887,10 +869,6 @@ namespace {
 		haveTTMove = true;
 	      enabledLearningProbe = true;
 	      expTTHit = true;
-	      if(depth - ss->ply < 16)
-	      {
-		  expTTMove = node->latestMoveInfo.move;
-	      }
 	      if (!haveTTMove)
 	      {
 		  ttMove = node->latestMoveInfo.move;
@@ -931,7 +909,6 @@ namespace {
 	}
       }
     }
-  
 
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
@@ -1055,10 +1032,10 @@ namespace {
     // Step 9. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 23405
+        && (ss-1)->statScore < 23397
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - NullSearchDepth * depth + NullSearchValue - improving * NmpImprovingValue
+        &&  ss->staticEval >= beta - 32 * depth + 292 - improving * 30
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -1066,17 +1043,13 @@ namespace {
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and value
-        Depth R = (NullReductionValue + NullReductionDepth * depth) / NMPdepth + std::min(int(eval - beta) / NMPvalue, 3);
+        Depth R = (854 + 68 * depth) / 258 + std::min(int(eval - beta) / 192, 3);
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-
         pos.do_null_move(st);
-
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
-
         pos.undo_null_move();
-
         if (nullValue >= beta)
         {
             // Do not return unproven mate scores
@@ -1085,7 +1058,6 @@ namespace {
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 13))
                 return nullValue;
-
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
             // Do verification search at high depths, with null move pruning disabled
@@ -1094,7 +1066,6 @@ namespace {
             thisThread->nmpColor = us;
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
-
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)

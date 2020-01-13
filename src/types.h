@@ -179,16 +179,14 @@ enum Value : int {
   VALUE_MATE_IN_MAX_PLY  =  VALUE_MATE - 2 * MAX_PLY,
   VALUE_MATED_IN_MAX_PLY = -VALUE_MATE + 2 * MAX_PLY,
 
+  PawnValueMg   = 128,   PawnValueEg   = 213,
+  KnightValueMg = 781,   KnightValueEg = 854,
+  BishopValueMg = 825,   BishopValueEg = 915,
+  RookValueMg   = 1276,  RookValueEg   = 1380,
+  QueenValueMg  = 2538,  QueenValueEg  = 2682,
+
+  MidgameLimit  = 15258, EndgameLimit  = 3915
 };
-
-extern Value PawnValueMg, PawnValueEg;
-extern Value KnightValueMg, KnightValueEg;
-extern Value BishopValueMg, BishopValueEg;
-extern Value RookValueMg, RookValueEg;
-extern Value QueenValueMg, QueenValueEg;
-
-extern Value MidgameLimit, EndgameLimit;
-  
 
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
@@ -462,4 +460,3 @@ constexpr bool is_ok(Move m) {
 
 #endif // #ifndef TYPES_H_INCLUDED
 
-#include "tune.h" // Global visibility to tuning setup

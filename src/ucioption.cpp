@@ -36,40 +36,7 @@ using std::string;
 
 UCI::OptionsMap Options; // Global object
 
-Value PawnValueMg, PawnValueEg;
-Value KnightValueMg, KnightValueEg;
-Value BishopValueMg, BishopValueEg;
-Value RookValueMg, RookValueEg;
-Value QueenValueMg, QueenValueEg;
-Value MidgameLimit, EndgameLimit;
-
 namespace UCI {
-
-void on_eval(const Option&) {
-  PawnValueMg   = Value(int(Options["PawnValueMg"]));
-  PawnValueEg   = Value(int(Options["PawnValueEg"]));
-  KnightValueMg = Value(int(Options["KnightValueMg"]));
-  KnightValueEg = Value(int(Options["KnightValueEg"]));
-  BishopValueMg = Value(int(Options["BishopValueMg"]));
-  BishopValueEg = Value(int(Options["BishopValueEg"]));
-  RookValueMg   = Value(int(Options["RookValueMg"]));
-  RookValueEg   = Value(int(Options["RookValueEg"]));
-  QueenValueMg  = Value(int(Options["QueenValueMg"]));
-  QueenValueEg  = Value(int(Options["QueenValueEg"]));
-  MidgameLimit  = Value(int(Options["MidgameLimit"]));
-  EndgameLimit  = Value(int(Options["EndgameLimit"]));
-
-  PieceValue[MG][PAWN] = PawnValueMg;
-  PieceValue[EG][PAWN] = PawnValueEg;
-  PieceValue[MG][KNIGHT] = KnightValueMg;
-  PieceValue[EG][KNIGHT] = KnightValueEg;
-  PieceValue[MG][BISHOP] = BishopValueMg;
-  PieceValue[EG][BISHOP] = BishopValueEg;
-  PieceValue[MG][ROOK] = RookValueMg;
-  PieceValue[EG][ROOK] = RookValueEg;
-  PieceValue[MG][QUEEN] = QueenValueMg;
-  PieceValue[EG][QUEEN] = QueenValueEg;
-}
 
 /// 'On change' actions, triggered by an option's value change
 void on_clear_hash(const Option&) { Search::clear(); }
@@ -156,28 +123,11 @@ void init(OptionsMap& o) {
   o["NN Persisted Self-Learning"]  << Option(false);
   o["Live Book"]             << Option(false);
   o["Live Book URL"]         << Option("http://www.chessdb.cn/cdb.php", on_livebook_url);
-  o["Live Book Timeout"]     << Option(1500, 0, 10000, on_livebook_timeout);
+  o["Live Book Timeout"]     << Option(5000, 0, 10000, on_livebook_timeout);
   o["Live Book Diversity"]   << Option(false);
   o["Live Book Contribute"]  << Option(false);
   o["Opening variety"]       << Option (0, 0, 40);
-    // SPSA
-  o["PawnValueMg"]           << Option(128, 0, 500, on_eval);
-  o["PawnValueEg"]           << Option(213, 0, 500, on_eval);
-  o["KnightValueMg"]         << Option(781, 0, 2000, on_eval);
-  o["KnightValueEg"]         << Option(854, 0, 2000, on_eval);
-  o["BishopValueMg"]         << Option(825, 0, 2000, on_eval);
-  o["BishopValueEg"]         << Option(915, 0, 2000, on_eval);
-  o["RookValueMg"]           << Option(1276, 0, 3000, on_eval);
-  o["RookValueEg"]           << Option(1380, 0, 3000, on_eval);
-  o["QueenValueMg"]          << Option(2538, 0, 5000, on_eval);
-  o["QueenValueEg"]          << Option(2682, 0, 5000, on_eval);
-  o["MidgameLimit"]          << Option(15258, 8000, 25000, on_eval);
-  o["EndgameLimit"]          << Option(3915, 0, 10000, on_eval);
-
-  on_eval(o["EndgameLimit"]);
-
 }
-
 void initLearning() {
   loadLearningFileIntoLearningTables(true);
   loadSlaveLearningFilesIntoLearningTables();
@@ -186,7 +136,6 @@ void initLearning() {
   globalLearningHT.clear();
   loadLearningFileIntoLearningTables(false);
 }
-
 
 /// operator<<() is used to print all the options default values in chronological
 /// insertion order (the idx field) and in the format defined by the UCI protocol.
@@ -295,127 +244,3 @@ Option& Option::operator=(const string& v) {
 
 } // namespace UCI
 
-
-
-/// Tuning Framework. Fully separated from SF code, appended here to avoid
-/// adding a *.cpp file and to modify Makefile.
-
-#include <iostream>
-#include <sstream>
-
-bool Tune::update_on_last;
-const UCI::Option* LastOption = nullptr;
-BoolConditions Conditions;
-static std::map<std::string, int> TuneResults;
-
-string Tune::next(string& names, bool pop) {
-
-  string name;
-
-  do {
-      string token = names.substr(0, names.find(','));
-
-      if (pop)
-          names.erase(0, token.size() + 1);
-
-      std::stringstream ws(token);
-      name += (ws >> token, token); // Remove trailing whitespace
-
-  } while (  std::count(name.begin(), name.end(), '(')
-           - std::count(name.begin(), name.end(), ')'));
-
-  return name;
-}
-
-static void on_tune(const UCI::Option& o) {
-
-  if (!Tune::update_on_last || LastOption == &o)
-      Tune::read_options();
-}
-
-static void make_option(const string& n, int v, const SetRange& r) {
-
-  // Do not generate option when there is nothing to tune (ie. min = max)
-  if (r(v).first == r(v).second)
-      return;
-
-  if (TuneResults.count(n))
-      v = TuneResults[n];
-
-  Options[n] << UCI::Option(v, r(v).first, r(v).second, on_tune);
-  LastOption = &Options[n];
-
-  // Print formatted parameters, ready to be copy-pasted in fishtest
-  std::cout << n << ","
-            << v << ","
-            << r(v).first << "," << r(v).second << ","
-            << (r(v).second - r(v).first) / 20.0 << ","
-            << "0.0020"
-            << std::endl;
-}
-
-template<> void Tune::Entry<int>::init_option() { make_option(name, value, range); }
-
-template<> void Tune::Entry<int>::read_option() {
-  if (Options.count(name))
-      value = Options[name];
-}
-
-template<> void Tune::Entry<Value>::init_option() { make_option(name, value, range); }
-
-template<> void Tune::Entry<Value>::read_option() {
-  if (Options.count(name))
-      value = Value(int(Options[name]));
-}
-
-template<> void Tune::Entry<Score>::init_option() {
-  make_option("m" + name, mg_value(value), range);
-  make_option("e" + name, eg_value(value), range);
-}
-
-template<> void Tune::Entry<Score>::read_option() {
-  if (Options.count("m" + name))
-      value = make_score(Options["m" + name], eg_value(value));
-
-  if (Options.count("e" + name))
-      value = make_score(mg_value(value), Options["e" + name]);
-}
-
-// Instead of a variable here we have a PostUpdate function: just call it
-template<> void Tune::Entry<Tune::PostUpdate>::init_option() {}
-template<> void Tune::Entry<Tune::PostUpdate>::read_option() { value(); }
-
-
-// Set binary conditions according to a probability that depends
-// on the corresponding parameter value.
-
-void BoolConditions::set() {
-
-  static PRNG rng(now());
-  static bool startup = true; // To workaround fishtest bench
-
-  for (size_t i = 0; i < binary.size(); i++)
-      binary[i] = !startup && (values[i] + int(rng.rand<unsigned>() % variance) > threshold);
-
-  startup = false;
-
-  for (size_t i = 0; i < binary.size(); i++)
-      sync_cout << binary[i] << sync_endl;
-}
-
-
-// Init options with tuning session results instead of default values. Useful to
-// get correct bench signature after a tuning session or to test tuned values.
-// Just copy fishtest tuning results in a result.txt file and extract the
-// values with:
-//
-// cat results.txt | sed 's/^param: \([^,]*\), best: \([^,]*\).*/  TuneResults["\1"] = int(round(\2));/'
-//
-// Then paste the output below, as the function body
-
-#include <cmath>
-
-void Tune::read_results() {
-
-  /* ...insert your values here... */
-}
